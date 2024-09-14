@@ -38,6 +38,18 @@ module HPS2PAD (
 	parameter PAD_3D          = 4;
 	parameter PAD_DUALMISSION = 5;
 	parameter PAD_MOUSE       = 6;
+
+  /*
+  wire [7:0] mjx =  {JOY1_X1[7],JOY1_X1[7],JOY1_X1[7],JOY1_X1[6:4],JOY1_X1[7],JOY1_X1[7]};
+  wire [7:0] mjy = -{JOY1_Y1[7],JOY1_Y1[7],JOY1_Y1[7],JOY1_Y1[6:4],JOY1_Y1[7],JOY1_Y1[7]};
+  */
+
+  wire [7:0] mjx =  {JOY1_X1[7],JOY1_X1[7],JOY1_X1[6:3],JOY1_X1[7],JOY1_X1[7]};
+  wire [7:0] mjy = -{JOY1_Y1[7],JOY1_Y1[7],JOY1_Y1[6:3],JOY1_Y1[7],JOY1_Y1[7]};
+
+  parameter DEAD_ZONE = 7;
+  wire [7:0] mjx_dz = ($signed(mjx) > $signed(DEAD_ZONE) || $signed(mjx) < $signed(-DEAD_ZONE)) ? mjx : 0;
+  wire [7:0] mjy_dz = ($signed(mjy) > $signed(DEAD_ZONE) || $signed(mjy) < $signed(-DEAD_ZONE)) ? mjy : 0;
 	
 	bit [ 3: 0] OUT1,OUT2;
 	bit         TL1,TL2;
@@ -68,19 +80,19 @@ module HPS2PAD (
 					endcase
 					if (PDR1O[6:5] == 2'b11) begin OUT1 <= 4'h0; TL1 <= 1; STATE1 <= 5'd0; end
 				end
-				
+
 				PAD_MOUSE: begin
 					case (STATE1)
 						5'd0,
 						5'd1: if (PDR1O[6:5] == 2'b01) begin OUT1 <= 4'hB;                          TL1 <= 1; STATE1 <= 5'd2; end
 						5'd2: if (PDR1O[6:5] == 2'b00) begin OUT1 <= 4'hF;                          TL1 <= 0; STATE1 <= 5'd3; end
 						5'd3: if (PDR1O[6:5] == 2'b01) begin OUT1 <= 4'hF;                          TL1 <= 1; STATE1 <= 5'd4; end
-						5'd4: if (PDR1O[6:5] == 2'b00) begin OUT1 <= {2'b00,JOY1_X1[7],JOY1_Y1[7]}; TL1 <= 0; STATE1 <= 5'd5; end
-						5'd5: if (PDR1O[6:5] == 2'b01) begin OUT1 <= JOY1[11: 8];                   TL1 <= 1; STATE1 <= 5'd6; end
-						5'd6: if (PDR1O[6:5] == 2'b00) begin OUT1 <= JOY1_X1[7:4]^4'h8;             TL1 <= 0; STATE1 <= 5'd7; end
-						5'd7: if (PDR1O[6:5] == 2'b01) begin OUT1 <= JOY1_X1[3:0];                  TL1 <= 1; STATE1 <= 5'd8; end
-						5'd8: if (PDR1O[6:5] == 2'b00) begin OUT1 <= JOY1_Y1[7:4]^4'h8;             TL1 <= 0; STATE1 <= 5'd9; end
-						5'd9: if (PDR1O[6:5] == 2'b01) begin OUT1 <= JOY1_Y1[3:0];                  TL1 <= 1; STATE1 <= 5'd10; end
+						5'd4: if (PDR1O[6:5] == 2'b00) begin OUT1 <= {2'b0,mjy_dz[7],mjx_dz[7]}; TL1 <= 0; STATE1 <= 5'd5; end
+						5'd5: if (PDR1O[6:5] == 2'b01) begin OUT1 <= ~JOY1[11: 8];                  TL1 <= 1; STATE1 <= 5'd6; end
+						5'd6: if (PDR1O[6:5] == 2'b00) begin OUT1 <= mjx_dz[7:4];                  TL1 <= 0; STATE1 <= 5'd7; end
+						5'd7: if (PDR1O[6:5] == 2'b01) begin OUT1 <= mjx_dz[3:0];                  TL1 <= 1; STATE1 <= 5'd8; end
+						5'd8: if (PDR1O[6:5] == 2'b00) begin OUT1 <= mjy_dz[7:4];                  TL1 <= 0; STATE1 <= 5'd9; end
+						5'd9: if (PDR1O[6:5] == 2'b01) begin OUT1 <= mjy_dz[3:0];                  TL1 <= 1; STATE1 <= 5'd10; end
 					endcase
 					if (PDR1O[6:5] == 2'b11) begin OUT1 <= 4'h0; TL1 <= 1; STATE1 <= 5'd0; end
 				end
